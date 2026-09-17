@@ -3,3 +3,6 @@ __pycache__/
 main.py.backup
 main.py.before-mode-fix
 main.py.before-mode-fix-2
+
+main.py.before-driver-installer
+main.py.before-driver-upgrade
