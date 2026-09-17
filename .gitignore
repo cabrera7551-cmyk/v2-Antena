@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+main.py.backup
+main.py.before-mode-fix
+main.py.before-mode-fix-2
