@@ -977,28 +977,31 @@ def change_mode(target_mode):
     )
 
     # --------------------------------------------------------
-    # SOLO DESCONECTAMOS LA WI-FI
+    # PROTEGER NETWORKMANAGER
+    # --------------------------------------------------------
+    #
+    # NO hacemos:
+    #
+    #   nmcli device disconnect wlan0
+    #
+    # porque NetworkManager puede dejar de registrar
+    # la interfaz después de cambiar su tipo mediante iw.
+    #
+    # El cambio de modo se realiza únicamente sobre
+    # la interfaz Wi-Fi detectada.
+    #
+    # Ethernet no se modifica.
     # --------------------------------------------------------
 
     if managed_by_nm:
 
-        print(
-            f"{YELLOW}"
-            f"Desconectando solamente "
-            f"{interface} de NetworkManager..."
-            f"{RESET}"
+        info(
+            "NetworkManager:",
+            f"{interface} permanecerá registrado.",
+            GREEN
         )
 
-        run_argv([
-            "sudo",
-            "nmcli",
-            "device",
-            "disconnect",
-            interface
-        ])
-
-        time.sleep(1)
-
+        time.sleep(0.5)
     # --------------------------------------------------------
     # CAMBIO DE MODO
     # --------------------------------------------------------
