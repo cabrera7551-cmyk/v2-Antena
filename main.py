@@ -3295,6 +3295,562 @@ def diagnostic():
 # DRIVER
 # ============================================================
 
+def get_kernel_driver_module(interface):
+    """
+    Obtiene el módulo del driver asociado a la interfaz.
+    Usa ethtool para obtener el nombre real del driver.
+    """
+    driver = get_driver(interface)
+
+    if driver == "Desconocido":
+        return None
+
+    return driver.strip()
+
+
+def check_driver_module(driver):
+    """
+    Comprueba si el módulo del driver existe
+    para el kernel actualmente instalado.
+    """
+    if not driver or driver == "Desconocido":
+        return False
+
+    if not command_exists("modinfo"):
+        return False
+
+    code, output = run_argv([
+        "modinfo",
+        driver
+    ])
+
+    return code == 0
+
+
+def check_driver_loaded(driver):
+    """
+    Comprueba si el módulo aparece actualmente cargado.
+    """
+    if not driver or driver == "Desconocido":
+        return False
+
+    if not command_exists("lsmod"):
+        return False
+
+    code, output = run_argv([
+        "lsmod"
+    ])
+
+    if code != 0:
+        return False
+
+    for line in output.splitlines():
+
+        parts = line.split()
+
+        if parts and parts[0] == driver:
+            return True
+
+    return False
+
+
+def check_firmware_package(package):
+    """
+    Comprueba si el paquete de firmware está instalado.
+    """
+    if not package or package == "Desconocido":
+        return False
+
+    if not command_exists("dpkg-query"):
+        return False
+
+    code, output = run_argv([
+        "dpkg-query",
+        "-W",
+        "-f=${Status}",
+        package
+    ])
+
+    return (
+        code == 0
+        and "install ok installed" in output
+    )
+
+
+def show_firmware_status():
+
+    header(
+        "ESTADO DEL FIRMWARE"
+    )
+
+    adapter = get_adapter_info()
+    interface = get_wireless_interface()
+
+    info(
+        "USB ID:",
+        adapter["usb_id"],
+        BLUE
+    )
+
+    info(
+        "Modelo:",
+        adapter["model"],
+        BLUE
+    )
+
+    info(
+        "Chipset:",
+        adapter["chipset"],
+        BLUE
+    )
+
+    info(
+        "Paquete:",
+        adapter["package"],
+        BLUE
+    )
+
+    print()
+
+    if (
+        adapter["package"]
+        == "Desconocido"
+    ):
+
+        err(
+            "No hay paquete de firmware "
+            "registrado para este adaptador."
+        )
+
+        pause()
+        return
+
+    if check_firmware_package(
+        adapter["package"]
+    ):
+
+        ok(
+            f"{adapter['package']} "
+            "está instalado."
+        )
+
+    else:
+
+        err(
+            f"{adapter['package']} "
+            "no está instalado."
+        )
+
+    print()
+
+    if interface:
+
+        firmware = get_firmware(
+            interface
+        )
+
+        info(
+            "Firmware reportado por ethtool:",
+            firmware,
+            YELLOW
+        )
+
+    else:
+
+        warn(
+            "No hay interfaz Wi-Fi para "
+            "consultar el firmware."
+        )
+
+    pause()
+
+
+def driver_diagnostic():
+
+    header(
+        "DIAGNÓSTICO Y REPARACIÓN"
+    )
+
+    adapter = get_adapter_info()
+    interface = get_wireless_interface()
+
+    info(
+        "USB ID:",
+        adapter["usb_id"],
+        BLUE
+    )
+
+    info(
+        "Modelo:",
+        adapter["model"],
+        BLUE
+    )
+
+    info(
+        "Chipset:",
+        adapter["chipset"],
+        BLUE
+    )
+
+    print()
+
+    # --------------------------------------------------------
+    # 1. ADAPTADOR USB
+    # --------------------------------------------------------
+
+    if adapter["usb_id"] in ADAPTER_DATABASE:
+
+        ok(
+            "Adaptador USB reconocido."
+        )
+
+    else:
+
+        err(
+            "Adaptador USB no registrado."
+        )
+
+        info(
+            "Nota:",
+            "No se instalarán drivers "
+            "externos automáticamente.",
+            WHITE
+        )
+
+        pause()
+        return
+
+    # --------------------------------------------------------
+    # 2. INTERFAZ
+    # --------------------------------------------------------
+
+    if interface:
+
+        ok(
+            f"Interfaz Wi-Fi detectada: "
+            f"{interface}"
+        )
+
+    else:
+
+        err(
+            "No se detectó una interfaz Wi-Fi."
+        )
+
+    # --------------------------------------------------------
+    # 3. KERNEL
+    # --------------------------------------------------------
+
+    if command_exists("uname"):
+
+        code, kernel = run_argv([
+            "uname",
+            "-r"
+        ])
+
+        if code == 0:
+
+            kernel = kernel.strip()
+
+            info(
+                "Kernel:",
+                kernel,
+                BLUE
+            )
+
+        else:
+
+            kernel = "Desconocido"
+
+    else:
+
+        kernel = "Desconocido"
+
+    # --------------------------------------------------------
+    # 4. DRIVER
+    # --------------------------------------------------------
+
+    driver = get_kernel_driver_module(
+        interface
+    )
+
+    if driver:
+
+        info(
+            "Driver detectado:",
+            driver,
+            GREEN
+        )
+
+        if check_driver_module(
+            driver
+        ):
+
+            ok(
+                "El módulo del driver "
+                "existe para el sistema."
+            )
+
+        else:
+
+            err(
+                "El módulo del driver "
+                "no está disponible."
+            )
+
+        if check_driver_loaded(
+            driver
+        ):
+
+            ok(
+                "El módulo del driver "
+                "está cargado."
+            )
+
+        else:
+
+            warn(
+                "El módulo del driver "
+                "no está cargado."
+            )
+
+    else:
+
+        err(
+            "No se pudo determinar "
+            "el driver."
+        )
+
+        driver = adapter.get(
+            "driver",
+            "Desconocido"
+        )
+
+        if (
+            driver != "Desconocido"
+            and check_driver_module(
+                driver
+            )
+        ):
+
+            ok(
+                f"El módulo {driver} "
+                "existe en el kernel."
+            )
+
+        else:
+
+            err(
+                "No se encontró el módulo "
+                "esperado."
+            )
+
+    # --------------------------------------------------------
+    # 5. FIRMWARE
+    # --------------------------------------------------------
+
+    package = adapter.get(
+        "package",
+        "Desconocido"
+    )
+
+    print()
+
+    if check_firmware_package(
+        package
+    ):
+
+        ok(
+            f"Paquete de firmware instalado: "
+            f"{package}"
+        )
+
+    else:
+
+        err(
+            f"Paquete de firmware faltante: "
+            f"{package}"
+        )
+
+    # --------------------------------------------------------
+    # 6. RESULTADO
+    # --------------------------------------------------------
+
+    print()
+
+    driver_ok = (
+        driver != "Desconocido"
+        and check_driver_module(driver)
+        and check_driver_loaded(driver)
+    )
+
+    firmware_ok = check_firmware_package(
+        package
+    )
+
+    interface_ok = bool(interface)
+
+    if (
+        interface_ok
+        and driver_ok
+        and firmware_ok
+    ):
+
+        ok(
+            "SOPORTE DEL ADAPTADOR: "
+            "CORRECTO"
+        )
+
+        info(
+            "No es necesario instalar "
+            "un driver externo.",
+            "",
+            WHITE
+        )
+
+        pause()
+        return
+
+    warn(
+        "El adaptador necesita "
+        "revisión."
+    )
+
+    print()
+
+    # --------------------------------------------------------
+    # REPARACIÓN DE FIRMWARE
+    # --------------------------------------------------------
+
+    if not firmware_ok:
+
+        warn(
+            "Falta el paquete de firmware."
+        )
+
+        choice = input(
+            f"\n{YELLOW}>{RESET} "
+            f"{WHITE}"
+            "¿Instalar firmware desde los "
+            "repositorios de Kali? (s/n): "
+            f"{RESET}"
+        ).strip().lower()
+
+        if choice == "s":
+
+            code, output = run_argv(
+                [
+                    "sudo",
+                    "apt",
+                    "update"
+                ],
+                timeout=120
+            )
+
+            if code != 0:
+
+                err(
+                    "apt update falló."
+                )
+
+                if output:
+                    print(output)
+
+            else:
+
+                code, output = run_argv(
+                    [
+                        "sudo",
+                        "apt",
+                        "install",
+                        "-y",
+                        package
+                    ],
+                    timeout=120
+                )
+
+                if code == 0:
+
+                    ok(
+                        "Firmware instalado "
+                        "correctamente."
+                    )
+
+                else:
+
+                    err(
+                        "No se pudo instalar "
+                        "el firmware."
+                    )
+
+                    if output:
+                        print(output)
+
+    # --------------------------------------------------------
+    # CARGAR DRIVER
+    # --------------------------------------------------------
+
+    if (
+        driver
+        and driver != "Desconocido"
+        and check_driver_module(driver)
+        and not check_driver_loaded(driver)
+    ):
+
+        print()
+
+        warn(
+            f"El módulo {driver} "
+            "existe pero no está cargado."
+        )
+
+        choice = input(
+            f"\n{YELLOW}>{RESET} "
+            f"{WHITE}"
+            f"¿Cargar módulo {driver}? (s/n): "
+            f"{RESET}"
+        ).strip().lower()
+
+        if choice == "s":
+
+            code, output = run_argv(
+                [
+                    "sudo",
+                    "modprobe",
+                    driver
+                ],
+                timeout=30
+            )
+
+            if code == 0:
+
+                ok(
+                    f"Módulo {driver} "
+                    "cargado correctamente."
+                )
+
+            else:
+
+                err(
+                    f"No se pudo cargar "
+                    f"{driver}."
+                )
+
+                if output:
+                    print(output)
+
+    print()
+
+    info(
+        "La reparación no modifica "
+        "NetworkManager ni eth0.",
+        "",
+        WHITE
+    )
+
+    pause()
+
+
 def detailed_driver_info():
 
     header(
@@ -3311,6 +3867,26 @@ def detailed_driver_info():
 
         pause()
         return
+
+    adapter = get_adapter_info()
+
+    info(
+        "USB ID:",
+        adapter["usb_id"],
+        BLUE
+    )
+
+    info(
+        "Modelo:",
+        adapter["model"],
+        BLUE
+    )
+
+    info(
+        "Chipset:",
+        adapter["chipset"],
+        BLUE
+    )
 
     info(
         "Interfaz:",
@@ -3336,6 +3912,8 @@ def detailed_driver_info():
         YELLOW
     )
 
+    print()
+
     if command_exists("ethtool"):
 
         code, output = run_argv([
@@ -3343,8 +3921,6 @@ def detailed_driver_info():
             "-i",
             interface
         ])
-
-        print()
 
         if output:
             print(output)
@@ -3432,6 +4008,24 @@ def verify_driver():
             f"{adapter['chipset']}."
         )
 
+        if check_driver_module(
+            driver
+        ):
+
+            ok(
+                "El módulo existe "
+                "en el kernel."
+            )
+
+        if check_driver_loaded(
+            driver
+        ):
+
+            ok(
+                "El módulo está "
+                "cargado."
+            )
+
     else:
 
         warn(
@@ -3451,125 +4045,18 @@ def verify_driver():
 
 def repair_driver():
 
-    header(
-        "REINSTALAR FIRMWARE"
-    )
-
-    adapter = get_adapter_info()
-
-    if (
-        adapter["usb_id"]
-        not in ADAPTER_DATABASE
-    ):
-
-        err(
-            "Adaptador no registrado."
-        )
-
-        pause()
-        return
-
-    info(
-        "Modelo:",
-        adapter["model"],
-        BLUE
-    )
-
-    info(
-        "Chipset:",
-        adapter["chipset"],
-        BLUE
-    )
-
-    info(
-        "Paquete:",
-        adapter["package"],
-        BLUE
-    )
-
-    warn(
-        "Esto reinstala firmware, "
-        "no recompila el driver."
-    )
-
-    choice = input(
-        f"\n{YELLOW}>{RESET} "
-        f"{WHITE}"
-        "¿Reinstalar firmware? (s/n):"
-        f"{RESET} "
-    ).strip().lower()
-
-    if choice != "s":
-
-        warn(
-            "Operación cancelada."
-        )
-
-        pause()
-        return
-
-    code, output = run_argv(
-        [
-            "sudo",
-            "apt",
-            "update"
-        ],
-        timeout=120
-    )
-
-    if code != 0:
-
-        err(
-            "apt update falló."
-        )
-
-        if output:
-            print(output)
-
-        pause()
-        return
-
-    code, output = run_argv(
-        [
-            "sudo",
-            "apt",
-            "install",
-            "--reinstall",
-            "-y",
-            adapter["package"]
-        ],
-        timeout=120
-    )
-
-    if code == 0:
-
-        ok(
-            "Firmware instalado/"
-            "reinstalado correctamente."
-        )
-
-    else:
-
-        err(
-            "No se pudo instalar "
-            "el paquete."
-        )
-
-        if output:
-            print(output)
-
-    pause()
+    driver_diagnostic()
 
 
 def driver_menu():
 
     while True:
 
-        header("DRIVER")
+        header("DRIVER WI-FI")
 
         print(
             f"{BLUE}[1]{RESET} "
-            "Reinstalar firmware"
+            "Diagnóstico y reparación"
         )
 
         print(
@@ -3580,6 +4067,11 @@ def driver_menu():
         print(
             f"{BLUE}[3]{RESET} "
             "Verificar compatibilidad"
+        )
+
+        print(
+            f"{BLUE}[4]{RESET} "
+            "Estado del firmware"
         )
 
         print(
@@ -3594,7 +4086,7 @@ def driver_menu():
 
         if choice == "1":
 
-            repair_driver()
+            driver_diagnostic()
 
         elif choice == "2":
 
@@ -3603,6 +4095,10 @@ def driver_menu():
         elif choice == "3":
 
             verify_driver()
+
+        elif choice == "4":
+
+            show_firmware_status()
 
         elif choice == "0":
 
@@ -3615,8 +4111,6 @@ def driver_menu():
             )
 
             time.sleep(1)
-
-
 # ============================================================
 # MENÚ CAMBIAR MODO
 # ============================================================
