@@ -1,53 +1,51 @@
-k# TPLink-Adapter V2
+k# NØXCAT V2
 
 ```text
-████████╗███████╗███╗   ███╗██████╗ ██╗███╗   ██╗
-╚══██╔══╝██╔════╝████╗ ████║██╔══██╗██║████╗  ██║
-   ██║   █████╗  ██╔████╔██║██████╔╝██║██╔██╗ ██║
-   ██║   ██╔══╝  ██║╚██╔╝██║██╔══██╗██║██║╚██╗██║
-   ██║   ███████╗██║ ╚═╝ ██║██║  ██║██║██║ ╚████║
-   ╚═╝   ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═══╝
+        /\_/\\
+       ( o.o )
+        > ^ <
+
+     N Ø X C A T
+   Wi-Fi Manager
 ```
 
-### TP-Link Wi-Fi Adapter Manager
+> **Wi-Fi Adapter Manager for Kali Linux**
 
-Herramienta para **administrar, diagnosticar y recuperar adaptadores Wi-Fi USB** en Kali Linux.
+Herramienta de terminal para **administrar, diagnosticar y reparar adaptadores Wi-Fi USB**.
 
-Diseñada especialmente para:
+### `FEATURES`
 
-**TP-Link Archer T2U PLUS — RTL8821AU**
-
-## Requisitos
-
-* Kali Linux o distribución Linux compatible
-* Python 3
-* NetworkManager
-* `iw`
-* `ip`
-* `rfkill`
-* `lsusb`
-* `ethtool`
-* `modinfo`
-* `lsmod`
-
-## Instalación
-
-Instalar los requisitos:
-
-```bash
-sudo apt update
-sudo apt install python3 network-manager iw iproute2 rfkill usbutils ethtool
+```text
+[+] Adapter Information
+[+] Driver Detection
+[+] Wi-Fi Modes
+[+] Bands & Channels
+[+] Wi-Fi Status
+[+] Wi-Fi Repair
+[+] Ethernet Status
+[+] Ethernet Repair
+[+] Network Diagnostics
+[+] NetworkManager Control
 ```
 
-Clonar el repositorio:
+### `INSTALL`
+
+Actualizar Kali:
 
 ```bash
-git clone https://github.com/cabrera7551-cmyk/v2-Antena.git
+sudo apt update && sudo apt upgrade -y
 ```
 
-Entrar al proyecto:
+Instalar requisitos:
 
 ```bash
+sudo apt install -y python3 network-manager iw iproute2 rfkill usbutils ethtool
+```
+
+Clonar NØXCAT:
+
+```bash
+git clone git@github.com:cabrera7551-cmyk/v2-Antena.git
 cd v2-Antena
 ```
 
@@ -57,29 +55,25 @@ Ejecutar:
 sudo python3 main.py
 ```
 
-## Funciones
+### `DEVICE`
 
-* Información del adaptador
-* Modos soportados
-* Bandas y canales
-* Estado del adaptador
-* Diagnóstico
-* Cambio de modo Wi-Fi
-* Información del driver
-* Estado y reparación de Wi-Fi
-* Estado y reparación de Ethernet
-* Diagnóstico general de red
-* Gestión de NetworkManager
+```text
+TP-Link Archer T2U PLUS
+RTL8821AU
+USB 2357:0120
+```
 
-## Autor
+### `AUTHOR`
 
 **Kevin Cabrera**
 
----
+`Cybersecurity • Linux • Networking`
 
-### GitHub
+```text
+        /\_/\\
+       ( o.o )
+        > ^ <
 
-https://github.com/cabrera7551-cmyk/v2-Antena
-
-**TPLink-Adapter V2 • 2026**
+       NØXCAT V2
+```
 
