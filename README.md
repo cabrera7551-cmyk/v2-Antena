@@ -1,121 +1,513 @@
-# TPLink-Adapter
+kk# ⚡ TPLink-Adapter V2
 
-Herramienta de administración, diagnóstico, recuperación y configuración de adaptadores Wi-Fi USB en Kali Linux.
+### AETHER // USB Wi-Fi Adapter Manager
 
-## Objetivo
+> **Administración · Diagnóstico · Recuperación · Configuración**
 
-Herramienta funcional para la gestión de adaptadores Wi-Fi USB, especialmente:
+Herramienta de administración y diagnóstico para adaptadores Wi-Fi USB en **Kali Linux**, diseñada para detectar dinámicamente hardware, interfaces, PHY, drivers y estado de red sin asumir nombres fijos de interfaz.
 
-- TP-Link Archer T2U Plus (USB ID: 2357:0120, Chipset: Realtek RTL8821AU)
-- Detección dinámica de hardware, interfaces, PHY, drivers y firmware
-- Diagnóstico completo con clasificación de problemas
-- Recuperación automática y manual de interfaces
-- Cambio de modo seguro con rollback
+---
 
-## Funcionalidades
+## 🛰️ ¿Qué es TPLink-Adapter?
 
-- Detección de adaptadores USB Wi-Fi
-- Identificación de chipset, driver y firmware
-- Detección dinámica de interfaces y PHY
-- Lectura de modos soportados y modo actual
-- Información de conexión Wi-Fi (SSID, BSSID, señal, etc.)
-- Bandas y canales soportados
-- Diagnóstico completo
-- Recuperación de interfaces
-- Cambio de modo con verificación y rollback
-- Estado de red (todas las interfaces)
-- Verificación de conectividad
+**TPLink-Adapter V2** nace como una herramienta para centralizar la administración de adaptadores Wi-Fi USB desde una interfaz de terminal.
 
-## Seguridad
+El proyecto está especialmente orientado al:
 
-Este proyecto es únicamente para:
-- Administración Wi-Fi
-- Diagnóstico
-- Recuperación
-- Configuración
-- Pruebas sobre equipos propios o autorizados
+**TP-Link Archer T2U Plus**
 
-NO implementa:
-- Captura de credenciales
-- Phishing
-- Evil Twin
-- Deauthentication
-- Cracking de contraseñas
-- Ataques contra redes
-- Robo de sesiones
-- Bypass de autenticación
+```text
+USB ID       : 2357:0120
+Chipset      : Realtek RTL8821AU
+Driver       : rtw88_8821au
+Plataforma   : Kali Linux
+```
 
-## Dependencias
+La versión V2 incorpora detección dinámica, diagnóstico, recuperación y mecanismos de verificación para reducir cambios innecesarios sobre el resto de la red.
 
-- Python 3 estándar
-- Herramientas nativas de Kali Linux:
-  - iw, ip, nmcli, rfkill, ethtool, lsusb, modinfo, lsmod, dmesg, journalctl
+---
 
-## Uso
+# 🧠 Filosofía del proyecto
+
+TPLink-Adapter no intenta simplemente ejecutar comandos.
+
+La idea es:
+
+```text
+        ┌──────────────────────┐
+        │     TPLink-Adapter   │
+        │          V2          │
+        └──────────┬───────────┘
+                   │
+          ┌────────▼────────┐
+          │    DETECCIÓN    │
+          └────────┬────────┘
+                   │
+       ┌───────────┼───────────┐
+       ▼           ▼           ▼
+    HARDWARE    DRIVER       RED
+       │           │           │
+       └───────────┼───────────┘
+                   ▼
+             DIAGNÓSTICO
+                   │
+          ┌────────▼────────┐
+          │    OPERACIÓN    │
+          └────────┬────────┘
+                   │
+             VERIFICACIÓN
+                   │
+          ┌────────▼────────┐
+          │  RECUPERACIÓN   │
+          │   / ROLLBACK    │
+          └─────────────────┘
+```
+
+Cada operación importante intenta comprobar el estado antes y después de realizar un cambio.
+
+---
+
+# ⚙️ Funcionalidades
+
+## 🔎 Detección
+
+* Detección de adaptadores USB Wi-Fi.
+* Identificación de chipset.
+* Identificación de driver.
+* Identificación de firmware.
+* Detección dinámica de interfaces.
+* Detección dinámica de PHY.
+* Detección del modo actual.
+* Detección de modos soportados.
+
+## 📡 Wi-Fi
+
+* Información de SSID.
+* BSSID.
+* Señal.
+* Canal.
+* Frecuencia.
+* Estado de conexión.
+* Bandas disponibles.
+* Canales soportados.
+* Administración de la interfaz Wi-Fi.
+* Cambio de modo de operación.
+
+## 🛠️ Diagnóstico
+
+El sistema analiza diferentes componentes:
+
+```text
+USB
+ │
+ ├── Adaptador
+ ├── Chipset
+ └── Identificación
+       │
+       ▼
+Driver
+ │
+ ├── Módulo
+ ├── Versión
+ └── Firmware
+       │
+       ▼
+Interfaz
+ │
+ ├── Estado
+ ├── Modo
+ ├── PHY
+ └── MAC
+       │
+       ▼
+Red
+ │
+ ├── IP
+ ├── Gateway
+ ├── DNS
+ └── Conectividad
+```
+
+Los problemas encontrados se clasifican para facilitar su interpretación.
+
+---
+
+# 🔄 Recuperación
+
+El proyecto incorpora funciones independientes para recuperación de:
+
+* Wi-Fi.
+* Ethernet.
+* Interfaz de red.
+* Conectividad.
+* NetworkManager.
+
+La recuperación de Wi-Fi está separada de Ethernet para evitar modificar innecesariamente una conexión cableada funcional.
+
+---
+
+# 🛡️ Cambio de modo seguro
+
+Una de las características principales de V2 es el cambio de modo con comprobaciones.
+
+Flujo:
+
+```text
+ESTADO ACTUAL
+      │
+      ▼
+DETECTAR INTERFAZ
+      │
+      ▼
+VERIFICAR MODOS
+      │
+      ▼
+GUARDAR ESTADO
+      │
+      ▼
+CAMBIAR MODO
+      │
+      ▼
+VERIFICAR RESULTADO
+      │
+   ┌──┴──┐
+   │     │
+   ▼     ▼
+ OK    ERROR
+   │     │
+   │     ▼
+   │   ROLLBACK
+   │     │
+   └──┬──┘
+      ▼
+VERIFICACIÓN FINAL
+```
+
+Si una operación falla, el programa puede intentar devolver la interfaz a un estado funcional.
+
+---
+
+# 🌐 Separación Wi-Fi / Ethernet
+
+El proyecto intenta mantener separadas las operaciones de cada interfaz.
+
+Por ejemplo:
+
+```text
+             RED DEL EQUIPO
+                   │
+          ┌────────┴────────┐
+          │                 │
+        eth0              wlan0
+      Ethernet             Wi-Fi
+          │                 │
+          │                 ├── Diagnóstico
+          │                 ├── Reparación
+          │                 └── Cambio de modo
+          │
+          └── Se mantiene independiente
+```
+
+El cambio de modo de Wi-Fi no requiere reiniciar NetworkManager globalmente.
+
+El reinicio de NetworkManager existe como una opción independiente para situaciones en las que realmente sea necesario.
+
+---
+
+# 🧪 Hardware de referencia
+
+### TP-Link Archer T2U Plus
+
+```text
+Fabricante : TP-Link
+Modelo     : Archer T2U Plus
+USB ID     : 2357:0120
+Chipset    : Realtek RTL8821AU
+Driver     : rtw88_8821au
+```
+
+> La compatibilidad puede variar dependiendo de la revisión física del adaptador, versión del kernel, firmware y distribución utilizada.
+
+---
+
+# 📦 Dependencias
+
+No utiliza paquetes Python externos para su funcionamiento principal.
+
+Requiere herramientas disponibles en Linux/Kali:
+
+```text
+Python 3
+iw
+ip
+nmcli
+rfkill
+ethtool
+lsusb
+modinfo
+lsmod
+dmesg
+journalctl
+```
+
+---
+
+# 🚀 Instalación
+
+Clonar el repositorio:
 
 ```bash
-python main.py
+git clone https://github.com/cabrera7551-cmyk/v2-Antena.git
 ```
 
-## Estructura del proyecto
+Entrar al directorio:
 
+```bash
+cd v2-Antena
 ```
+
+Ejecutar:
+
+```bash
+sudo python3 main.py
+```
+
+---
+
+# 🖥️ Uso
+
+Al ejecutar el programa aparecerá el menú principal:
+
+```text
+AETHER CYBER CAT
+TPLink-Adapter V2
+
+1. Información del adaptador
+2. Modos soportados
+3. Bandas y canales
+4. Estado del adaptador
+5. Diagnóstico
+6. Cambiar modo Wi-Fi
+7. Driver Wi-Fi
+8. Estado de Wi-Fi
+9. Reparar Wi-Fi
+10. Estado de Ethernet
+11. Reparar Ethernet
+12. Estado general de red
+13. Reiniciar NetworkManager
+14. Cambiar interfaz Wi-Fi administrada
+
+0. Salir
+```
+
+---
+
+# 🧩 Detección dinámica
+
+El proyecto evita depender de nombres como:
+
+```text
+wlan0
+wlan1
+phy0
+phy1
+```
+
+En su lugar, intenta descubrir dinámicamente las interfaces y dispositivos disponibles.
+
+Esto permite trabajar con diferentes configuraciones de hardware y múltiples adaptadores Wi-Fi.
+
+---
+
+# 🧯 Manejo de errores
+
+V2 incorpora mecanismos para reducir errores durante las operaciones:
+
+* Validación de comandos.
+* Timeouts.
+* Manejo de excepciones.
+* Comprobación del estado de interfaces.
+* Verificación de modos soportados.
+* Comprobación posterior a cambios.
+* Recuperación.
+* Rollback.
+* Diagnóstico de conectividad.
+
+---
+
+# 🧪 Tests
+
+Los tests se encuentran dentro de:
+
+```text
+tests/
+```
+
+Ejecutar el test básico:
+
+```bash
+python3 tests/test_basic.py
+```
+
+Comprobar sintaxis:
+
+```bash
+python3 tests/test_syntax.py
+```
+
+---
+
+# 📁 Estructura
+
+```text
 TPLink-Adapter/
+│
+├── main.py
 ├── README.md
 ├── .gitignore
-├── main.py                 # Script principal funcional
+│
 ├── legacy/
-│   └── main_old.py         # Script original de referencia
-├── src/                    # Infraestructura modular (para uso futuro)
-│   ├── models/             # Modelos de datos y estados
-│   └── commands/           # Ejecución segura de comandos
-├── tests/                  # Pruebas del proyecto
-│   ├── test_basic.py       # Test básico de estructura
-│   └── test_syntax.py      # Test de sintaxis Python
-└── reports/                # Directorio para reportes generados
+│   └── main_old.py
+│
+├── src/
+│   ├── models/
+│   └── commands/
+│
+├── tests/
+│   ├── test_basic.py
+│   └── test_syntax.py
+│
+└── reports/
 ```
 
-## Características principales
+### Componentes
 
-### Detección dinámica
-- No asume nombres fijos como wlan0, phy0, phy1, phy2
-- Detecta automáticamente interfaces y PHY disponibles
-- Soporta múltiples adaptadores Wi-Fi
+| Directorio | Función                 |
+| ---------- | ----------------------- |
+| `main.py`  | Aplicación principal    |
+| `src/`     | Infraestructura modular |
+| `tests/`   | Pruebas                 |
+| `legacy/`  | Versiones anteriores    |
+| `reports/` | Reportes generados      |
 
-### Manejo robusto de errores
-- Timeouts en comandos
-- Manejo de excepciones
-- Validación de comandos existentes
-- Clasificación de errores específicos
+---
 
-### Colores profesionales
-- Solo usa: BLUE, WHITE, YELLOW, RED, GREEN
-- Sin emojis ni decoración excesiva
-- Diseño limpio y profesional
+# 🔐 Seguridad y alcance
 
-### Verificación de cambios
-- Verificación automática después de cambio de modo
-- Rollback automático si falla el cambio
-- Verificación de conectividad después de recuperación
+Este proyecto está orientado exclusivamente a:
 
-## Hardware de referencia
+* Administración Wi-Fi.
+* Diagnóstico.
+* Recuperación.
+* Configuración.
+* Mantenimiento.
+* Pruebas sobre equipos propios o autorizados.
 
-- TP-Link Archer T2U Plus
-- USB: 2357:0120
-- Chipset: RTL8821AU
-- Driver: rtw88_8821au
+### No implementa
 
-## Tests
-
-Los tests están diseñados para ejecutarse en Kali Linux:
-
-```bash
-python test_basic.py      # Test de estructura y sintaxis
-python test_syntax.py     # Test de sintaxis Python
+```text
+✗ Captura de credenciales
+✗ Phishing
+✗ Evil Twin
+✗ Deauthentication
+✗ Cracking de contraseñas
+✗ Robo de sesiones
+✗ Bypass de autenticación
+✗ Ataques contra redes
 ```
 
-## Notas
+El proyecto se centra en **administración y diagnóstico del propio sistema y adaptador**.
 
-- El script requiere Kali Linux o distribución similar
-- Las herramientas de Linux específicas deben estar instaladas
-- El adaptador Wi-Fi debe estar conectado para funcionamiento completo
+---
+
+# 🧬 Arquitectura V2
+
+La versión V2 está orientada a separar responsabilidades:
+
+```text
+                    AETHER V2
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+     HARDWARE        DRIVER          NETWORK
+        │              │              │
+        └──────────────┼──────────────┘
+                       │
+                   INTERFACE
+                       │
+              ┌────────┴────────┐
+              │                 │
+            Wi-Fi            Ethernet
+              │
+       ┌──────┼──────┐
+       │      │      │
+    STATUS  REPAIR  MODE
+                      │
+                VERIFICATION
+                      │
+                   ROLLBACK
+```
+
+---
+
+# 📌 Estado del proyecto
+
+**Version:** `V2`
+
+**Status:** 🟢 Active Development
+
+El proyecto continúa evolucionando hacia una arquitectura más modular y una detección de hardware más robusta.
+
+---
+
+# 🗺️ Roadmap
+
+### V2.x
+
+* [x] Detección dinámica de interfaces.
+* [x] Detección de PHY.
+* [x] Información de driver.
+* [x] Diagnóstico.
+* [x] Recuperación Wi-Fi.
+* [x] Recuperación Ethernet.
+* [x] Cambio de modo.
+* [x] Verificación posterior.
+* [x] Rollback.
+* [x] Separación Wi-Fi/Ethernet.
+
+### Futuro
+
+* [ ] Arquitectura modular completa.
+* [ ] Sistema de logs.
+* [ ] Exportación de diagnósticos.
+* [ ] Mayor cobertura de adaptadores.
+* [ ] Tests automatizados más completos.
+* [ ] Detección avanzada de revisiones de hardware.
+
+---
+
+# 👨‍💻 Autor
+
+**Kev / cabrera7551-cmyk**
+
+Proyecto desarrollado como herramienta de administración y diagnóstico de adaptadores Wi-Fi USB sobre Linux.
+
+---
+
+## ⚡ TPLink-Adapter V2
+
+```text
+             /\_/\
+            ( o.o )
+             > ^ <
+
+        AETHER // V2
+
+   DETECT  •  DIAGNOSE
+   REPAIR  •  VERIFY
+```
+
+**Know your hardware.
+Understand your network.
+Control your adapter.**
+
